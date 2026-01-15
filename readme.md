@@ -1,42 +1,64 @@
-Compatibilidade: Zabbix 6.2 ou superior.
+# VMware Replication - Template Zabbix
 
-VMware PowerCLI no Zabbix
-1. Instalação (PowerShell + PowerCLI)
-# Instalar o PowerShell
-# Instala o PowerCLI Globalmente
+**Compatibilidade:** Zabbix 6.2 ou superior
+
+## Instalação
+
+### 1. PowerShell + PowerCLI
+Instale o PowerShell e o módulo PowerCLI globalmente:
+```bash
 sudo pwsh -Command "Install-Module -Name VMware.PowerCLI, VMware.VimAutomation.vSphereReplication -Scope AllUsers -AllowClobber -Force"
+```
 
-2. Ambiente e Permissões
-# Cria diretórios de configuração e ajusta dono
+### 2. Ambiente e Permissões
+Crie os diretórios necessários e ajuste as permissões:
+```bash
 mkdir -p /var/lib/zabbix/.{config,local/share}/powershell
 mkdir -p /var/lib/zabbix/.config/VMware/PowerCLI
 chown -R zabbix:zabbix /var/lib/zabbix
+```
 
-3. Configuração do Usuário Zabbix
-# Silencia CEIP e ignora certificados (Comando único)
+### 3. Configuração do PowerCLI
+Configure o PowerCLI para o usuário Zabbix:
+```bash
 sudo -u zabbix -H pwsh -Command "Set-PowerCLIConfiguration -ParticipateInCEIP \$false -InvalidCertificateAction Ignore -DisplayDeprecationWarnings \$false -Confirm:\$false"
+```
 
-Scripts devem ser adicionados na pasta de externalscripts
+### 4. Scripts
+Copie os scripts para a pasta de externalscripts do Zabbix:
+```bash
+cp check_vmware_replication.sh /usr/lib/zabbix/externalscripts/
+chmod +x /usr/lib/zabbix/externalscripts/check_vmware_replication.sh
+```
 
-Preencher macros com:
-Replication IP
-Vcenter FQDN
-User Vcenter
-Pass Vcenter
+## Configuração
 
-Testar `sudo -u zabbix -H /usr/lib/zabbix/externalscripts/seu_script.sh vcenter user pass vr_ip`
+### Macros
+Configure as seguintes macros no host/template:
+- `{$REPLICATIONIP}` - IP do VMware Replication Server
+- `{$FQDN}` - FQDN do vCenter
+- `{$VMWAREUSER}` - Usuário do vCenter
+- `{$VMWAREPASS}` - Senha do vCenter
 
-Items
-Vmware Replication Raw Data		
-check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}"]
+### Teste
+Valide a execução do script:
+```bash
+sudo -u zabbix -H /usr/lib/zabbix/externalscripts/check_vmware_replication.sh vcenter user pass vr_ip
+```
 
-Discovery
-Vmware Replication Raw Data: Replications Discovery
+## Template
 
-Item Prototype
-Vmware Replication Raw Data: Replication {#VM_NAME}: RPO Violation	
-Vmware Replication Raw Data: Replication {#VM_NAME}: Status
+### Item
+- **Vmware Replication Raw Data**  
+  `check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}"]`
 
-Trigger Prototype
-Replication {#VM_NAME} failed
-Replication {#VM_NAME} RPO violated
+### Discovery Rule
+- **Vmware Replication Raw Data: Replications Discovery**
+
+### Item Prototypes
+- **Replication {#VM_NAME}: RPO Violation**
+- **Replication {#VM_NAME}: Status**
+
+### Trigger Prototypes
+- **Replication {#VM_NAME} failed**
+- **Replication {#VM_NAME} RPO violated**
