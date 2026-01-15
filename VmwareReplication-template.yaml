@@ -1,0 +1,131 @@
+zabbix_export:
+  version: '6.2'
+  date: '2026-01-15T20:42:06Z'
+  template_groups:
+    -
+      uuid: 02e4df4f20b848e79267641790f241da
+      name: Templates/Virtualization
+  templates:
+    -
+      uuid: 419615aec767475cb1898fd6636a05f4
+      template: 'Vmware Replication'
+      name: 'Vmware Replication'
+      description: |
+        Criado por Nathan Schiavon - 01/2026
+        https://www.linkedin.com/in/schiavonnathan/
+        
+        Template de monitoramento do Vsphere Replication via Script PowerShell.
+        
+        Como utilizar:
+        https://github.com/SchiavonNathan/Template-Vmware-Replication
+      groups:
+        -
+          name: Templates/Virtualization
+      items:
+        -
+          uuid: 0f55d55450b64c0981a0158fbf51cccf
+          name: 'Vmware Replication Raw Data'
+          type: EXTERNAL
+          key: 'check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}"]'
+          delay: 30m
+          history: '0'
+          trends: '0'
+          value_type: TEXT
+      discovery_rules:
+        -
+          uuid: c3dfe5964fef4820aefa8d669317ac99
+          name: 'Replications Discovery'
+          type: DEPENDENT
+          key: vmware.replication.discovery
+          delay: '0'
+          lifetime: 7d
+          item_prototypes:
+            -
+              uuid: 0f6c433e148042bb9fd3b5e23bb3d6e8
+              name: 'Replication {#VM_NAME}: RPO Violation'
+              type: DEPENDENT
+              key: 'vmware.replication.rpo_violated[{#VM_NAME}]'
+              delay: '0'
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.[?(@.vm_name == "{#VM_NAME}")].rpo_violated.first()'
+                -
+                  type: BOOL_TO_DECIMAL
+                  parameters:
+                    - ''
+              master_item:
+                key: 'check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}"]'
+              tags:
+                -
+                  tag: Replication
+                  value: RPO
+              trigger_prototypes:
+                -
+                  uuid: 74e4e3fd280a484aad7b35ed69a32970
+                  expression: 'last(/Vmware Replication/vmware.replication.rpo_violated[{#VM_NAME}])=1'
+                  recovery_mode: RECOVERY_EXPRESSION
+                  recovery_expression: 'last(/Vmware Replication/vmware.replication.rpo_violated[{#VM_NAME}])=0'
+                  name: 'Replication {#VM_NAME} RPO violated'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  tags:
+                    -
+                      tag: Replication
+                      value: 'RPO Violation'
+            -
+              uuid: 8d62abc8bf534b14ba60b02eae57eca5
+              name: 'Replication {#VM_NAME}: Status'
+              type: DEPENDENT
+              key: 'vmware.replication.status[{#VM_NAME}]'
+              delay: '0'
+              trends: '0'
+              value_type: CHAR
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.[?(@.vm_name == "{#VM_NAME}")].status.first()'
+              master_item:
+                key: 'check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}"]'
+              tags:
+                -
+                  tag: Replication
+                  value: Status
+              trigger_prototypes:
+                -
+                  uuid: 6fb9966a01694fc29fb60e42f2673b05
+                  expression: 'last(/Vmware Replication/vmware.replication.status[{#VM_NAME}])<>"OK"'
+                  recovery_mode: RECOVERY_EXPRESSION
+                  recovery_expression: 'last(/Vmware Replication/vmware.replication.status[{#VM_NAME}])="OK"'
+                  name: 'Replication {#VM_NAME} failed'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  tags:
+                    -
+                      tag: Replication
+                      value: Failed
+          master_item:
+            key: 'check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}"]'
+          lld_macro_paths:
+            -
+              lld_macro: '{#VM_NAME}'
+              path: $.vm_name
+      tags:
+        -
+          tag: Vmware
+          value: Replication
+      macros:
+        -
+          macro: '{$FQDN}'
+          description: 'FQDN/NOME do Vcenter. Ex:vcenter-prd.teste.br'
+        -
+          macro: '{$REPLICATIONIP}'
+          description: 'Ip do Vsphere Replication'
+        -
+          macro: '{$VMWAREPASS}'
+          description: 'Senha do Vcenter'
+        -
+          macro: '{$VMWAREUSER}'
+          description: 'Usuario do Vcenter'
