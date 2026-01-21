@@ -7,7 +7,7 @@
 ### 1. PowerShell + PowerCLI
 Instale o PowerShell e o módulo PowerCLI globalmente:
 ```bash
-sudo pwsh -Command "Install-Module -Name VMware.PowerCLI, VMware.VimAutomation.vSphereReplication -Scope AllUsers -AllowClobber -Force"
+sudo pwsh -Command "Install-Module -Name VMware.PowerCLI -Scope AllUsers -AllowClobber -Force"
 ```
 
 ### 2. Ambiente e Permissões

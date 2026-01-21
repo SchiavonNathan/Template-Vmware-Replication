@@ -5,7 +5,8 @@ param(
     [Parameter(Mandatory=$true, Position=0)] [string]$vcenter_server,
     [Parameter(Mandatory=$true, Position=1)] [string]$vcenter_user,
     [Parameter(Mandatory=$true, Position=2)] [string]$vcenter_pass,
-    [Parameter(Mandatory=$true, Position=3)] [string]$vr_appliance_server
+    [Parameter(Mandatory=$true, Position=3)] [string]$vr_appliance_server,
+    [Parameter(Mandatory=$false, Position=4)] [string]$remote_vcenter
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,12 +19,13 @@ try {
     $vrConn = Connect-VrServer -Server $vr_appliance_server -User $vcenter_user -Password $vcenter_pass
 
     $allPairings = (Invoke-VrGetVrPairings).List
-    $Pairing = $allPairings | Where-Object {
-        $_.LocalVcServer.Name -match $vcenter_server -or
-        $_.RemoteVcServer.Name -match $vcenter_server
-    }
 
-    if (-not $Pairing) { throw "PairingID nao encontrado para $vcenter_server" }
+    $Pairing = $allPairings | Where-Object {
+        ($_.LocalVcServer.Name -match $vcenter_server -or $_.LocalVcServer.Address -match $vcenter_server) -and
+        ( -not $remote_vcenter -or ($_.RemoteVcServer.Name -match $remote_vcenter -or $_.RemoteVcServer.Address -match $remote_vcenter) )
+    } | Select-Object -First 1 
+
+    if (-not $Pairing) { throw "PairingID nao encontrado para $vcenter_server -> $remote_vcenter" }
 
     $PairingID = $Pairing.PairingId.GUID
     $VCGuid = (Invoke-VrGetVrInfo).VCGuid.guid
@@ -36,13 +38,13 @@ try {
             status       = $rep.status.status
             rpo_violated = [bool]$rep.status.rpoviolation
             rpo_config   = $rep.RPO
+            pairing_info = "$($Pairing.LocalVcServer.Name) to $($Pairing.RemoteVcServer.Name)"
         }
         $data += $obj
     }
 
     Write-Output ($data | ConvertTo-Json -Compress)
 }
-
 catch {
     $errorObj = @{
         error   = $true
@@ -50,13 +52,7 @@ catch {
     }
     Write-Output ($errorObj | ConvertTo-Json -Compress)
 }
-
 finally {
-    if ($null -ne $vrConn) {
-        Disconnect-VrServer -Server $vr_appliance_server -ErrorAction SilentlyContinue
-    }
-    if ($null -ne $vcenterConn) {
-        Disconnect-VIServer -Server $vcenter_server -Confirm:$false -ErrorAction SilentlyContinue
-    }
+    if ($null -ne $vrConn) { Disconnect-VrServer -Server $vr_appliance_server -ErrorAction SilentlyContinue }
+    if ($null -ne $vcenterConn) { Disconnect-VIServer -Server $vcenter_server -Confirm:$false -ErrorAction SilentlyContinue }
 }
-

@@ -6,4 +6,5 @@
 
 export HOME=/var/lib/zabbix
 
-/usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -File /usr/lib/zabbix/externalscripts/check_vmware_replication.ps1 "$1" "$2" "$3" "$4"
+/usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -File /usr/lib/zabbix/externalscripts/check_vmware_replication.ps1 "$1" "$2" "$3" "$4" "$5"
+    

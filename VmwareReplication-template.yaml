@@ -1,6 +1,6 @@
 zabbix_export:
   version: '6.2'
-  date: '2026-01-15T20:42:06Z'
+  date: '2026-01-21T17:05:22Z'
   template_groups:
     -
       uuid: 02e4df4f20b848e79267641790f241da
@@ -26,7 +26,7 @@ zabbix_export:
           uuid: 0f55d55450b64c0981a0158fbf51cccf
           name: 'Vmware Replication Raw Data'
           type: EXTERNAL
-          key: 'check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}"]'
+          key: 'check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}","{$REPLICATIONREMOTE}"]'
           delay: 30m
           history: '0'
           trends: '0'
@@ -56,7 +56,7 @@ zabbix_export:
                   parameters:
                     - ''
               master_item:
-                key: 'check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}"]'
+                key: 'check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}","{$REPLICATIONREMOTE}"]'
               tags:
                 -
                   tag: Replication
@@ -70,10 +70,16 @@ zabbix_export:
                   name: 'Replication {#VM_NAME} RPO violated'
                   opdata: 'Status: {ITEM.LASTVALUE1}'
                   priority: HIGH
+                  description: |
+                    Falha VMware.
+                    Alerta de atraso na replicação.
                   tags:
                     -
                       tag: Replication
                       value: 'RPO Violation'
+                    -
+                      tag: Replication
+                      value: VMware
             -
               uuid: 8d62abc8bf534b14ba60b02eae57eca5
               name: 'Replication {#VM_NAME}: Status'
@@ -88,7 +94,7 @@ zabbix_export:
                   parameters:
                     - '$.[?(@.vm_name == "{#VM_NAME}")].status.first()'
               master_item:
-                key: 'check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}"]'
+                key: 'check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}","{$REPLICATIONREMOTE}"]'
               tags:
                 -
                   tag: Replication
@@ -102,12 +108,18 @@ zabbix_export:
                   name: 'Replication {#VM_NAME} failed'
                   opdata: 'Status: {ITEM.LASTVALUE1}'
                   priority: HIGH
+                  description: |
+                    Falha VMware.
+                    Falha de replicação da VM no Vsphere Replication.
                   tags:
                     -
                       tag: Replication
                       value: Failed
+                    -
+                      tag: Replication
+                      value: VMware
           master_item:
-            key: 'check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}"]'
+            key: 'check_vmware_replication.sh["{$FQDN}","{$VMWAREUSER}","{$VMWAREPASS}","{$REPLICATIONIP}","{$REPLICATIONREMOTE}"]'
           lld_macro_paths:
             -
               lld_macro: '{#VM_NAME}'
@@ -123,6 +135,9 @@ zabbix_export:
         -
           macro: '{$REPLICATIONIP}'
           description: 'Ip do Vsphere Replication'
+        -
+          macro: '{$REPLICATIONREMOTE}'
+          description: 'Remote Name'
         -
           macro: '{$VMWAREPASS}'
           description: 'Senha do Vcenter'
